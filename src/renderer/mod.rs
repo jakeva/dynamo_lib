@@ -1,8 +1,12 @@
-// use crate::geometry::{quad, vertex};
+use crate::geometry::quad::*;
 use crate::geometry::vertex::*;
 use crate::geometry::Geometry;
 use std::iter;
 use winit::window::Window;
+
+pub trait RenderGeometry {
+    fn set_quads(&mut self, quads: Vec<Quad>);
+}
 
 pub struct Renderer {
     surface: wgpu::Surface,
@@ -14,6 +18,7 @@ pub struct Renderer {
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
+    quads: Vec<Quad>,
 }
 
 impl Renderer {
@@ -69,17 +74,19 @@ impl Renderer {
 
         let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: Vertex::SIZE * 4 * 2,
+            size: Vertex::SIZE * 4 * 3,
             usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
             mapped_at_creation: false,
         });
 
         let index_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: U32_SIZE * 6 * 2,
+            size: U32_SIZE * 6 * 3,
             usage: wgpu::BufferUsage::INDEX | wgpu::BufferUsage::COPY_DST,
             mapped_at_creation: false,
         });
+
+        let quads = Vec::new();
 
         Self {
             surface,
@@ -89,6 +96,7 @@ impl Renderer {
             swap_chain,
             size,
             pipeline,
+            quads,
             vertex_buffer,
             index_buffer,
         }
@@ -101,7 +109,7 @@ impl Renderer {
         self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
     }
 
-    pub fn render(&mut self, game_state: &Box<dyn crate::GameState>) {
+    pub fn render(&mut self) {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -109,9 +117,8 @@ impl Renderer {
             });
 
         let mut geometry = Geometry::new();
-        let quads = game_state.quads();
 
-        for quad in quads.iter() {
+        for quad in self.quads.iter() {
             geometry = geometry.push_quad(quad);
         }
 
@@ -189,4 +196,24 @@ fn create_render_pipeline(
             vertex_buffers: vertex_descs,
         },
     })
+}
+
+impl RenderGeometry for Renderer {
+    fn set_quads(&mut self, quads: Vec<Quad>) {
+        self.quads = quads;
+
+        self.vertex_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: Vertex::SIZE * 4 * (self.quads.len() as u64),
+            usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        self.index_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: U32_SIZE * 6 * (self.quads.len() as u64),
+            usage: wgpu::BufferUsage::INDEX | wgpu::BufferUsage::COPY_DST,
+            mapped_at_creation: false,
+        });
+    }
 }

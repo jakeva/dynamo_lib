@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Quad {
     pub position: cgmath::Vector2<f32>,
     pub size: cgmath::Vector2<f32>,
