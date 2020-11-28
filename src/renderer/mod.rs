@@ -69,14 +69,14 @@ impl Renderer {
 
         let vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: Vertex::SIZE * 4 * 1,
+            size: Vertex::SIZE * 4 * 2,
             usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
             mapped_at_creation: false,
         });
 
         let index_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: U32_SIZE * 6 * 1,
+            size: U32_SIZE * 6 * 2,
             usage: wgpu::BufferUsage::INDEX | wgpu::BufferUsage::COPY_DST,
             mapped_at_creation: false,
         });

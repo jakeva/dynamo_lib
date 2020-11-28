@@ -11,20 +11,17 @@ use winit::{
     window::WindowBuilder,
 };
 
-pub trait InputHandler {
-    fn process_keyboard(&self, input: keyboard::KeyboardInput);
-}
-
 pub trait GameState {
     fn initialize(&self);
-    fn update(&self);
+    fn update(&mut self);
+    fn process_keyboard(&mut self, input: keyboard::KeyboardInput);
     fn quads(&self) -> Vec<&Quad>;
 }
 
 pub fn start(
     title: &str,
-    game_state: Box<dyn GameState>,
-    input_handlers: Vec<Box<dyn InputHandler>>,
+    mut game_state: Box<dyn GameState>,
+    // input_handlers: Vec<Box<dyn InputHandler>>,
 ) {
     env_logger::init();
     let event_loop = EventLoop::new();
@@ -60,10 +57,10 @@ pub fn start(
                     },
                 ..
             } => {
-                for input_handler in &input_handlers {
-                    let keyboard_input = keyboard::KeyboardInput::new(key, state);
-                    input_handler.process_keyboard(keyboard_input);
-                }
+                // for input_handler in &input_handlers {
+                let keyboard_input = keyboard::KeyboardInput::new(key, state);
+                game_state.process_keyboard(keyboard_input);
+                // }
             }
             WindowEvent::MouseWheel { delta: _, .. } => {
                 // self.camera_controller.process_scroll(delta);

@@ -1,6 +1,6 @@
 use winit::event::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum KeyboardKeyState {
     Pressed,
     Released,
