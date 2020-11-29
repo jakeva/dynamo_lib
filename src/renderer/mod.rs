@@ -173,9 +173,7 @@ impl Renderer {
                 drop(render_pass);
 
                 for render_text in text_renderer.render_texts.iter() {
-                    if render_text.visible {
-                        draw_text(render_text, &mut self.glyph_brush);
-                    }
+                    draw_text(render_text, &mut self.glyph_brush);
                 }
 
                 self.glyph_brush

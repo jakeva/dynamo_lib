@@ -20,7 +20,7 @@ pub trait Game {
         text_renderer: &mut TextRenderer,
         window_size: (f32, f32),
     );
-    fn update(&mut self, geometry: &mut Geometry);
+    fn update(&mut self, geometry: &mut Geometry, text_renderer: &mut TextRenderer);
     fn process_keyboard(&mut self, input: keyboard::KeyboardInput);
     fn is_quitting(&self) -> bool;
 }
@@ -54,7 +54,7 @@ pub fn start(title: &str, mut game: Box<dyn Game>) {
 
         match event {
             Event::RedrawRequested(_) => {
-                game.update(&mut geometry);
+                game.update(&mut geometry, &mut text_renderer);
                 renderer.render(&geometry, &text_renderer);
             }
             Event::MainEventsCleared => {
