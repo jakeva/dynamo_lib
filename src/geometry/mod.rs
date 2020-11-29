@@ -21,8 +21,8 @@ impl Geometry {
     }
 
     pub fn reset(&mut self) {
-        self.vertex_data = Vec::new();
-        self.index_data = Vec::new();
+        self.vertex_data.clear();
+        self.index_data.clear();
         self.num_quads = 0;
     }
 

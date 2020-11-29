@@ -1,7 +1,15 @@
+pub mod render_text;
+
 use crate::geometry::vertex::*;
 use crate::geometry::Geometry;
+use render_text::*;
+
 use std::iter;
+
+use wgpu_glyph::{ab_glyph, Section, Text};
 use winit::window::Window;
+
+const FONT_BYTES: &[u8] = include_bytes!("../../res/fonts/PressStart2P-Regular.ttf");
 
 pub struct Renderer {
     surface: wgpu::Surface,
@@ -13,9 +21,20 @@ pub struct Renderer {
     pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
+    glyph_brush: wgpu_glyph::GlyphBrush<()>,
+    staging_belt: wgpu::util::StagingBelt,
 }
 
 impl Renderer {
+    pub fn width(&self) -> f32 {
+        self.sc_desc.width as f32
+    }
+
+    #[allow(dead_code)]
+    pub fn height(&self) -> f32 {
+        self.sc_desc.height as f32
+    }
+
     pub async fn new(window: &Window) -> Self {
         let size = window.inner_size();
 
@@ -80,6 +99,11 @@ impl Renderer {
             mapped_at_creation: false,
         });
 
+        let font = ab_glyph::FontArc::try_from_slice(FONT_BYTES).unwrap();
+        let glyph_brush =
+            wgpu_glyph::GlyphBrushBuilder::using_font(font).build(&device, sc_desc.format);
+        let staging_belt = wgpu::util::StagingBelt::new(1024);
+
         Self {
             surface,
             device,
@@ -90,6 +114,8 @@ impl Renderer {
             pipeline,
             vertex_buffer,
             index_buffer,
+            glyph_brush,
+            staging_belt,
         }
     }
 
@@ -100,7 +126,7 @@ impl Renderer {
         self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
     }
 
-    pub fn render(&mut self, geometry: &Geometry) {
+    pub fn render(&mut self, geometry: &Geometry, text_renderer: &TextRenderer) {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -145,6 +171,26 @@ impl Renderer {
                 }
 
                 drop(render_pass);
+
+                for render_text in text_renderer.render_texts.iter() {
+                    if render_text.visible {
+                        draw_text(render_text, &mut self.glyph_brush);
+                    }
+                }
+
+                self.glyph_brush
+                    .draw_queued(
+                        &self.device,
+                        &mut self.staging_belt,
+                        &mut encoder,
+                        &frame.output.view,
+                        self.sc_desc.width,
+                        self.sc_desc.height,
+                    )
+                    .unwrap();
+
+                self.staging_belt.finish();
+
                 self.queue.submit(iter::once(encoder.finish()));
             }
             Err(wgpu::SwapChainError::Outdated) => {
@@ -196,4 +242,29 @@ fn create_render_pipeline(
             vertex_buffers: vertex_descs,
         },
     })
+}
+
+fn draw_text(text: &RenderText, glyph_brush: &mut wgpu_glyph::GlyphBrush<()>) {
+    let layout = wgpu_glyph::Layout::default().h_align(if text.centered {
+        wgpu_glyph::HorizontalAlign::Center
+    } else {
+        wgpu_glyph::HorizontalAlign::Left
+    });
+
+    let section =
+        Section {
+            screen_position: text.position.into(),
+            bounds: text.bounds.into(),
+            layout,
+            ..Section::default()
+        }
+        .add_text(Text::new(&text.text).with_color(text.color).with_scale(
+            if text.focused {
+                text.size + 8.0
+            } else {
+                text.size
+            },
+        ));
+
+    glyph_brush.queue(section);
 }
