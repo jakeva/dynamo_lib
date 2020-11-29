@@ -1,8 +1,5 @@
-pub mod render_geometry;
-
 use crate::geometry::vertex::*;
 use crate::geometry::Geometry;
-use render_geometry::RenderGeometry;
 use std::iter;
 use winit::window::Window;
 
@@ -103,7 +100,7 @@ impl Renderer {
         self.swap_chain = self.device.create_swap_chain(&self.surface, &self.sc_desc);
     }
 
-    pub fn render(&mut self, render_geometry: &RenderGeometry) {
+    pub fn render(&mut self, geometry: &Geometry) {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -112,25 +109,20 @@ impl Renderer {
 
         self.vertex_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: Vertex::SIZE * 4 * (render_geometry.quads.len() as u64),
+            size: Vertex::SIZE * 4 * (geometry.num_quads as u64),
             usage: wgpu::BufferUsage::VERTEX | wgpu::BufferUsage::COPY_DST,
             mapped_at_creation: false,
         });
 
         self.index_buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
-            size: U32_SIZE * 6 * (render_geometry.quads.len() as u64),
+            size: U32_SIZE * 6 * (geometry.num_quads as u64),
             usage: wgpu::BufferUsage::INDEX | wgpu::BufferUsage::COPY_DST,
             mapped_at_creation: false,
         });
 
-        let mut geometry = Geometry::new();
-
-        for quad in render_geometry.quads.iter() {
-            geometry = geometry.push_quad(quad);
-        }
-
         let (stg_vertex, stg_index, num_indices) = geometry.build(&self.device);
+
         stg_vertex.copy_to_buffer(&mut encoder, &self.vertex_buffer);
         stg_index.copy_to_buffer(&mut encoder, &self.index_buffer);
 

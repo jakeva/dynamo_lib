@@ -8,7 +8,7 @@ use quad::Quad;
 pub struct Geometry {
     vertex_data: Vec<vertex::Vertex>,
     index_data: Vec<u32>,
-    current_quad: u32,
+    pub num_quads: u32,
 }
 
 impl Geometry {
@@ -16,11 +16,17 @@ impl Geometry {
         Self {
             vertex_data: Vec::new(),
             index_data: Vec::new(),
-            current_quad: 0,
+            num_quads: 0,
         }
     }
 
-    pub fn push_quad(mut self, quad: &Quad) -> Self {
+    pub fn reset(&mut self) {
+        self.vertex_data = Vec::new();
+        self.index_data = Vec::new();
+        self.num_quads = 0;
+    }
+
+    pub fn push_quad(&mut self, quad: &Quad) {
         let min_x = quad.position.x - quad.size.x * 0.5;
         let min_y = quad.position.y - quad.size.y * 0.5;
         let max_x = quad.position.x + quad.size.x * 0.5;
@@ -41,18 +47,17 @@ impl Geometry {
             },
         ]);
         self.index_data.extend(&[
-            self.current_quad * 4 + 0,
-            self.current_quad * 4 + 1,
-            self.current_quad * 4 + 2,
-            self.current_quad * 4 + 0,
-            self.current_quad * 4 + 2,
-            self.current_quad * 4 + 3,
+            self.num_quads * 4 + 0,
+            self.num_quads * 4 + 1,
+            self.num_quads * 4 + 2,
+            self.num_quads * 4 + 0,
+            self.num_quads * 4 + 2,
+            self.num_quads * 4 + 3,
         ]);
-        self.current_quad += 1;
-        self
+        self.num_quads += 1;
     }
 
-    pub fn build(self, device: &wgpu::Device) -> (StagingBuffer, StagingBuffer, u32) {
+    pub fn build(&self, device: &wgpu::Device) -> (StagingBuffer, StagingBuffer, u32) {
         (
             StagingBuffer::new(device, &self.vertex_data),
             StagingBuffer::new(device, &self.index_data),
@@ -78,7 +83,7 @@ impl StagingBuffer {
         }
     }
 
-    pub fn copy_to_buffer(&self, encoder: &mut wgpu::CommandEncoder, other: &wgpu::Buffer) {
+    pub fn copy_to_buffer(self, encoder: &mut wgpu::CommandEncoder, other: &wgpu::Buffer) {
         encoder.copy_buffer_to_buffer(&self.buffer, 0, other, 0, self.size)
     }
 }

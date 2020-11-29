@@ -2,9 +2,8 @@ use std::mem;
 
 pub const U32_SIZE: wgpu::BufferAddress = std::mem::size_of::<u32>() as wgpu::BufferAddress;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Vertex {
-    #[allow(dead_code)]
     pub position: cgmath::Vector2<f32>,
 }
 
