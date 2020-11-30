@@ -1,11 +1,13 @@
 pub mod geometry;
 pub mod keyboard;
 pub mod renderer;
+pub mod sound;
 mod util;
 
 use geometry::Geometry;
 use renderer::render_text::*;
 use renderer::*;
+use sound::SoundSystem;
 
 use winit::{
     event::*,
@@ -18,9 +20,15 @@ pub trait Game {
         &mut self,
         geometry: &mut Geometry,
         text_renderer: &mut TextRenderer,
+        sound_system: &SoundSystem,
         window_size: (f32, f32),
     );
-    fn update(&mut self, geometry: &mut Geometry, text_renderer: &mut TextRenderer);
+    fn update(
+        &mut self,
+        geometry: &mut Geometry,
+        text_renderer: &mut TextRenderer,
+        sound_system: &SoundSystem,
+    );
     fn process_keyboard(&mut self, input: keyboard::KeyboardInput);
     fn is_quitting(&self) -> bool;
 }
@@ -38,10 +46,12 @@ pub fn start(title: &str, mut game: Box<dyn Game>) {
     let mut renderer = block_on(Renderer::new(&window));
     let mut geometry = Geometry::new();
     let mut text_renderer = TextRenderer::new();
+    let sound_system = sound::SoundSystem::new();
 
     game.initialize(
         &mut geometry,
         &mut text_renderer,
+        &sound_system,
         (renderer.width(), renderer.height()),
     );
 
@@ -54,7 +64,7 @@ pub fn start(title: &str, mut game: Box<dyn Game>) {
 
         match event {
             Event::RedrawRequested(_) => {
-                game.update(&mut geometry, &mut text_renderer);
+                game.update(&mut geometry, &mut text_renderer, &sound_system);
                 renderer.render(&geometry, &text_renderer);
             }
             Event::MainEventsCleared => {
