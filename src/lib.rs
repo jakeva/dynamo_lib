@@ -107,7 +107,7 @@ pub fn start(title: &str, mut game: Box<dyn Game>) {
           renderer.resize(**new_inner_size);
         }
         WindowEvent::Focused(focused) => {
-          game.focus_changed(focused);
+          game.focus_changed(*focused);
         }
         _ => {}
       },
